@@ -1,0 +1,52 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robotkris
+
+//@version=5
+indicator("Vol-Targetted Position Size", overlay = false)
+import TradingView/ta/7
+import robotkris/VolTargetting/1 as VolTargetting
+
+// user inputs
+balance = input(10000, "Balance")  // in units of quote currency
+volEstimationWdw = input(30, "Volatility estimation window length")
+targetVolContribution = input(10, "Target volatility contribution, %")
+tradeBuffer = input(5, "Size of no-trade region as % of target position size")
+
+// calculate vol forecast as ewma of volatility
+volForecast = VolTargetting.ewmaVol(volEstimationWdw)
+
+// calculate target position size
+targetPos = VolTargetting.volTargettedSize(balance, targetVolContribution, volForecast)
+upperBarrier = targetPos+targetPos*0.01*tradeBuffer
+lowerBarrier = targetPos-targetPos*0.01*tradeBuffer
+
+// plot target position size and no-trade region
+plot(targetPos, title = "Target position", color = color.rgb(66, 56, 245), style = plot.style_stepline)
+barrier1 = plot(upperBarrier, "Top of no-trade region", color = color.rgb(245, 126, 56, 50))
+barrier2 = plot(lowerBarrier, "Bottom of no-trade region", color = color.rgb(245, 126, 56, 50))
+fill(barrier1, barrier2, color = color.rgb(245, 126, 56, 75))
+
+// Output relevant information in a table
+
+// Initialize the table on the first bar
+var table targetPosDisplay = table.new(position.bottom_right, 2, 7, bgcolor = color.rgb(97, 189, 79, 40), frame_width = 2, frame_color = color.rgb(97, 189, 79, 50))
+
+// Make display text static - relates to most recent bar on the chart only
+// If we displayed targetPos instead of finalTargetPos, the value in the text display would change as the user moved their curser over previous bars
+if barstate.islast 
+    finalTargetPos = targetPos
+    table.cell(targetPosDisplay, 0, 0, str.format("Balance ({0})", syminfo.currency), text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 0, str.format("{0}", balance), text_color = color.black, text_halign = text.align_right)
+    table.cell(targetPosDisplay, 0, 1, "Target vol (Ann.)", text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 1, str.format("{0}%", targetVolContribution), text_color = color.black, text_halign = text.align_right)
+    table.cell(targetPosDisplay, 0, 2, str.format("{0}-period ann. vol", volEstimationWdw), text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 2, str.format("{0}%", math.round(volForecast*100, 1)), text_color = color.black, text_halign = text.align_right)
+    table.cell(targetPosDisplay, 0, 3, "Position size", text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 3, str.format("{0}", finalTargetPos), text_color = color.black, text_halign = text.align_right)
+    table.cell(targetPosDisplay, 0, 4, "No-trade buffer", text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 4, str.format("{0}%", tradeBuffer), text_color = color.black, text_halign = text.align_right)    
+    table.cell(targetPosDisplay, 0, 5, "Upper no-trade barrier", text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 5, str.format("{0}", math.round(upperBarrier, 1)), text_color = color.black, text_halign = text.align_right)
+    table.cell(targetPosDisplay, 0, 6, "Lower no-trade barrier", text_color = color.black, text_halign = text.align_left)
+    table.cell(targetPosDisplay, 1, 6, str.format("{0}", math.round(lowerBarrier, 1)), text_color = color.black, text_halign = text.align_right)
+

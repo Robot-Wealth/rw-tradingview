@@ -1,0 +1,53 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robotkris
+
+//@version=5
+
+// @description: Functions for calculating position sizes based on volatility targets
+library("VolTargetting")
+import TradingView/ta/7
+
+// @function Calculates an exponentially weighted annualised volatility
+// @param estimationWdw Half life of exponential weighting scheme
+// @returns Exponentially weighted annualised volatility
+export ewmaVol(int estimationWdw) =>
+	// vol annualisation factor  
+	// scale by sqrt(365) for crypto, sqrt(252) for everything else
+	int secondsInYear = 252*24*60*60
+	if syminfo.type == "crypto"
+		secondsInYear := 365*24*60*60
+	volAnnualisationFactor = math.sqrt(secondsInYear/timeframe.in_seconds())
+	
+	// vol calcs
+	simple_return = (close[0] - close[1])/close[1]
+	ewmaVariance = ta.ema(math.pow(simple_return, 2), estimationWdw)
+	ewmaVolatility = math.sqrt(ewmaVariance) * volAnnualisationFactor
+
+	ewmaVolatility
+
+// @function Calculates a volatility-targetted position size in number of units
+// @param nominalBalance Portfolio size on which to calculate volatility targets
+// @param targetVolContribution Amount of volatility to be assigned to this position
+// @param forecastVol Volatility forecast to use in position size calculation as % 
+// @returns Position size in units (shares, contracts, etc)
+export volTargettedSize(float nominalBalance, float targetVolContribution, float forecastVol) =>
+	targetPos = nominalBalance / close * 0.01*targetVolContribution/forecastVol  // targetVolContribution input as %
+	if syminfo.type == "crypto" 
+		targetPos := math.round(targetPos, 5)
+	else if syminfo.type == "forex"
+		targetPos := math.round(targetPos, 2) 
+	else 
+		targetPos := math.floor(targetPos)
+
+	targetPos
+
+// example usage
+balance = 10000
+volEstimationWdw = 30
+targetVolContribution = 15
+volForecast = ewmaVol(volEstimationWdw)
+targetPos = volTargettedSize(balance, targetVolContribution, volForecast)
+plot(targetPos, title = "Target position", color = color.rgb(0, 120, 219))
+
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robotkris

@@ -1,0 +1,40 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © robotkris
+
+//@version=5
+strategy("Vol-Targetted Position Size Strategy", overlay = false)
+import TradingView/ta/7
+import robotkris/VolTargetting/1 as VolTargetting
+
+balance = strategy.initial_capital
+volEstimationWdw = input(30, "Volatility estimation window length")
+targetVolContribution = input(20, "Target volatility contribution, %")
+tradeBuffer = input(10, "Size of no-trade region as % of target position size")
+
+// calculate vol forecast as ewma of volatility
+volForecast = VolTargetting.ewmaVol(volEstimationWdw)
+
+// calculate target position size
+targetPos = VolTargetting.volTargettedSize(balance, targetVolContribution, volForecast)
+upperBarrier = targetPos+targetPos*0.01*tradeBuffer
+lowerBarrier = targetPos-targetPos*0.01*tradeBuffer
+
+// current position
+float currentPosition = strategy.position_size
+
+// trade logic
+delta = math.floor(math.abs(currentPosition - targetPos))
+if currentPosition > upperBarrier
+	// current position is above trade buffer - rebalance back to target
+    strategy.order('position', direction = strategy.short, qty = delta)
+else if currentPosition < lowerBarrier
+	// current position is below trade buffer - rebalance back to target
+    strategy.order('position', direction = strategy.long, qty = delta)
+
+// plot current position
+plot(currentPosition, "current pos", color = color.rgb(37, 188, 0), style = plot.style_stepline, linewidth = 2)
+// plot target position size and no-trade region
+plot(targetPos, title = "Target position", color = color.rgb(66, 56, 245), style = plot.style_stepline)
+barrier1 = plot(upperBarrier, "Top of no-trade region", color = color.rgb(245, 126, 56, 50))
+barrier2 = plot(lowerBarrier, "Bottom of no-trade region", color = color.rgb(245, 126, 56, 50))
+fill(barrier1, barrier2, color = color.rgb(245, 126, 56, 75))
