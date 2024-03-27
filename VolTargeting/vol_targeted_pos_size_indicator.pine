@@ -2,9 +2,9 @@
 // © robotkris
 
 //@version=5
-indicator("Vol-Targetted Position Size", overlay = false)
+indicator("Vol-Targeted Position Size", overlay = false)
 import TradingView/ta/7
-import robotkris/VolTargetting/1 as VolTargetting
+import robotkris/VolTargeting/2 as VolTargeting
 
 // user inputs
 balance = input(10000, "Balance")  // in units of quote currency
@@ -13,10 +13,10 @@ targetVolContribution = input(10, "Target volatility contribution, %")
 tradeBuffer = input(5, "Size of no-trade region as % of target position size")
 
 // calculate vol forecast as ewma of volatility
-volForecast = VolTargetting.ewmaVol(volEstimationWdw)
+volForecast = VolTargeting.ewmaVol(volEstimationWdw)
 
 // calculate target position size
-targetPos = VolTargetting.volTargettedSize(balance, targetVolContribution, volForecast)
+targetPos = VolTargeting.volTargetedSize(balance, targetVolContribution, volForecast)
 upperBarrier = targetPos+targetPos*0.01*tradeBuffer
 lowerBarrier = targetPos-targetPos*0.01*tradeBuffer
 

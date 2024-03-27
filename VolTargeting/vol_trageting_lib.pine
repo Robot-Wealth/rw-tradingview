@@ -4,7 +4,7 @@
 //@version=5
 
 // @description: Functions for calculating position sizes based on volatility targets
-library("VolTargetting")
+library("VolTargeting")
 import TradingView/ta/7
 
 // @function Calculates an exponentially weighted annualised volatility
@@ -30,7 +30,7 @@ export ewmaVol(int estimationWdw) =>
 // @param targetVolContribution Amount of volatility to be assigned to this position
 // @param forecastVol Volatility forecast to use in position size calculation as % 
 // @returns Position size in units (shares, contracts, etc)
-export volTargettedSize(float nominalBalance, float targetVolContribution, float forecastVol) =>
+export volTargetedSize(float nominalBalance, float targetVolContribution, float forecastVol) =>
 	targetPos = nominalBalance / close * 0.01*targetVolContribution/forecastVol  // targetVolContribution input as %
 	if syminfo.type == "crypto" 
 		targetPos := math.round(targetPos, 5)
@@ -46,7 +46,7 @@ balance = 10000
 volEstimationWdw = 30
 targetVolContribution = 15
 volForecast = ewmaVol(volEstimationWdw)
-targetPos = volTargettedSize(balance, targetVolContribution, volForecast)
+targetPos = volTargetedSize(balance, targetVolContribution, volForecast)
 plot(targetPos, title = "Target position", color = color.rgb(0, 120, 219))
 
 // This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
